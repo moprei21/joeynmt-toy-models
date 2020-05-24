@@ -1,10 +1,9 @@
 
 # Removing large files
 **/data
+**/models
 **/tools
 **/venvs
-**/models
-**/scripts
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
