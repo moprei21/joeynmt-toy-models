@@ -46,3 +46,18 @@ The training process can be interrupted at any time, and the best checkpoint wil
 Evaluate a trained model with
 
     ./scripts/evaluate.sh
+
+$ python3 tools/joeynmt/scripts/build_vocab.py data/sample.tokenized.train.de-nl.de data/sample.tokenized.train.de-nl.nl --output_path data/bpe_vocab/vocab.de.nl
+$ subword-nmt learn-joint-bpe-and-vocab -i data/sample.tokenized.train.de-nl.de data/sample.tokenized.train.de-nl.nl --write-vocabulary data/bpe_vocab/de.vocab data/bpe_vocab/nl.vocab -s 2000 --total-symbols -o data/bpe_vocab/bpe.de-nl
+Number of word-internal characters: 110
+Number of word-final characters: 145
+Reducing number of merge operations by 255
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/sample.tokenized.train.de-nl.> data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.de
+-bash: data/sample.tokenized.train.de-nl.: No such file or directory
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/sample.tokenized.train.de-nl.de> data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.de
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.test.de-nl.de> data/bpe_vocab/tokenized.test.bpe.2000-train.de-nl.de
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.test.de-nl.de> data/bpe_vocab/tokenized.bpe.2000-test.de-nl.de
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.test.de-nl.nl> data/bpe_vocab/tokenized.bpe.2000-test.de-nl.nl
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.dev.de-nl.nl> data/bpe_vocab/tokenized.bpe.2000-dev.de-nl.nl
+$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.dev.de-nl.de> data/bpe_vocab/tokenized.bpe.2000-dev.de-nl.de
+$ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 python3 -m joeynmt train configs/bpe.2000.yaml
