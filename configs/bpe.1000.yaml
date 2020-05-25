@@ -1,11 +1,11 @@
-name: "bpe.3000"
+name: "bpe.1000"
 
 data:
     src: "de"
     trg: "nl"
-    train: "data/bpe_vocab/sample.tokenized.bpe.3000-train.de-nl"
-    dev:   "data/bpe_vocab/tokenized.bpe.3000-dev.de-nl"
-    test:  "data/bpe_vocab/tokenized.bpe.3000-test.de-nl"
+    train: "data/bpe_vocab/sample.tokenized.bpe.1000-train.de-nl"
+    dev:   "data/bpe_vocab/tokenized.bpe.1000-dev.de-nl"
+    test:  "data/bpe_vocab/tokenized.bpe.1000-test.de-nl"
     level: "bpe"
     lowercase: False
     max_sent_length: 100
@@ -13,8 +13,8 @@ data:
     #src_voc_limit: ?
     #trg_voc_limit: ?
     # or (= not both!) a file with a vocabulary built before starting the training:
-    src_vocab: "data/bpe_vocab/vocab.3000.de.nl"
-    trg_vocab: "data/bpe_vocab/vocab.3000.de.nl"
+    src_vocab: "data/bpe_vocab/vocab.1000.de.nl"
+    trg_vocab: "data/bpe_vocab/vocab.1000.de.nl"
 
 testing:
     beam_size: 5
@@ -37,7 +37,7 @@ training:
     validation_freq: 500
     logging_freq: 100
     eval_metric: "bleu"
-    model_dir: "models/bpe.2000"
+    model_dir: "models/bpe.1000"
     overwrite: False
     shuffle: True
     use_cuda: False
