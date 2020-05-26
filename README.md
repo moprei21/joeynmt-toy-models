@@ -146,7 +146,22 @@ The quality of this model is similar as the two models just described. There are
     
 #Exercise 3
 
+## Translation with different beam-size
+First of all we created a new folder to store the new data
 
-    
+        mkdir ex3
+        cd ..
 
+Then we translated the test set from our best model from task 2 ten times with alternating beamsizes
+For the different values for the beamsizes we took the fibonacci-sequence to get a distribution.  
+The different beam sizes had to be adjusted manually in the config of the model and also for the storing of the new data
+ 
+    python3 -m joeynmt translate configs/bpe.2000.yaml < data/test.de-nl.de --output_path ex3/beam.1
+
+After this we detokenized and then calculated the Bleu Score for the new data just as in task 2
+
+The results of this can be found in ex3/bleubeamplot.png and look at ex3/bleubeamplot.py for the implementation of the plot  
+
+In this graph we can see that if the beam size increases the Bleu Score decreases but only really after numbers that are bigger than 5. Its maximum is reached at a beamsize of 2.  
+Our personal takeaway is that a beamsize between one and five led to the best results so we will definitely use a number in this range in the future.
 
