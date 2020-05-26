@@ -4,6 +4,7 @@
 **/models
 **/tools
 **/venvs
+**/ex3/data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

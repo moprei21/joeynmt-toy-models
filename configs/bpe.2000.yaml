@@ -17,7 +17,7 @@ data:
     trg_vocab: "data/bpe_vocab/vocab.2000.de.nl"
 
 testing:
-    beam_size: 5
+    beam_size: 0
     alpha: 1.0
 
 training:

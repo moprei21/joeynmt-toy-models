@@ -15,9 +15,9 @@ data, train and evaluate models.
 
 Clone this repository in the desired place and check out the correct branch:
 
-    git clone https://github.com/bricksdont/joeynmt-toy-models
+    git clone https://github.com/moprei21/joeynmt-toy-models
     cd joeynmt-toy-models
-    checkout ex4
+    checkout ex5
 
 Create a new virtualenv that uses Python 3. Please make sure to run this command outside of any virtual Python environment:
 
@@ -31,33 +31,122 @@ Download and install required software:
 
 Download and split data:
 
-    ./scripts/download_split_data.sh
+    ./scripts/download_data.sh
 
-Preprocess data:
+#Exercise 2
 
-    ./scripts/preprocess.sh
+## sampling of training data
+We first sample 100000 sentence pairs from each language to deliver a sampled training file  
+Source language:
 
-Then finally train a model:
+    shuf -n 100000 --random-source=train.de-nl.nl <(cat train.de-nl.de) > sample.train.de-nl.de
+    wc sample.train.de-nl.de
+Output:  
+    100000 1491296 9788931 sample.train.de-nl.de  
+    
+Target language:  
 
-    ./scripts/train.sh
+    shuf -n 100000 --random-source=train.de-nl.nl <(cat train.de-nl.nl) > sample.train.de-nl.nl
+    wc sample.train.de-nl.de
+Output:  
+    100000 1491296 9788931 sample.train.de-nl.de
 
-The training process can be interrupted at any time, and the best checkpoint will always be saved.
+## preprocessing of data with tokeniztion
+Tokenized all necessary files with tokenizer.perl in tools/moses-scripts/scripts/tokenizer
+  
+sample.train.de-nl.de --> tokenized.sample.train.de-nl.de  
+sample.train.de-nl.nl --> tokenized.sample.train.de-nl.nl  
+test.de-nl.de --> tokenized.test.de-nl.de  
+test.de-nl.nl --> tokenized.test.de-nl.nl    
+dev.de-nl.de --> tokenized.dev.de-nl.de  
+dev.de-nl.nl --> tokenized.dev.de-nl.nl  
 
-Evaluate a trained model with
 
-    ./scripts/evaluate.sh
+## Training word level model
+We copied the example config into the word_level.yaml and made the necessary adjustments for the model to work.  
+These adjustments can be seen in configs/word_level.yaml  
+After these adjustments the training begins: 
 
-$ python3 tools/joeynmt/scripts/build_vocab.py data/sample.tokenized.train.de-nl.de data/sample.tokenized.train.de-nl.nl --output_path data/bpe_vocab/vocab.de.nl
-$ subword-nmt learn-joint-bpe-and-vocab -i data/sample.tokenized.train.de-nl.de data/sample.tokenized.train.de-nl.nl --write-vocabulary data/bpe_vocab/de.vocab data/bpe_vocab/nl.vocab -s 2000 --total-symbols -o data/bpe_vocab/bpe.de-nl
-Number of word-internal characters: 110
-Number of word-final characters: 145
-Reducing number of merge operations by 255
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/sample.tokenized.train.de-nl.> data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.de
--bash: data/sample.tokenized.train.de-nl.: No such file or directory
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/sample.tokenized.train.de-nl.de> data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.de
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.test.de-nl.de> data/bpe_vocab/tokenized.test.bpe.2000-train.de-nl.de
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.test.de-nl.de> data/bpe_vocab/tokenized.bpe.2000-test.de-nl.de
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.test.de-nl.nl> data/bpe_vocab/tokenized.bpe.2000-test.de-nl.nl
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.dev.de-nl.nl> data/bpe_vocab/tokenized.bpe.2000-dev.de-nl.nl
-$ subword-nmt apply-bpe -c data/bpe_vocab/bpe.de-nl --vocabulary data/bpe_vocab/de.vocab --vocabulary-threshold 10 <data/tokenized.dev.de-nl.de> data/bpe_vocab/tokenized.bpe.2000-dev.de-nl.de
-$ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 python3 -m joeynmt train configs/bpe.2000.yaml
+    CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 python3 -m joeynmt train configs/word_level.yaml
+    
+## Evaluation of word level
+Detokenization and bleu score evaluation:
+
+    cat models/word_level/00002500.hyps.test | tools/moses-scripts/scripts/tokenizer/detokenizer.perl > data/detokenized.word_level.hyps.test
+    cat data/detokenized.word_level.hyps.test | sacrebleu data/test.de-nl.nl
+    
+Outcome is to be found in the table at the end of the section  
+
+
+## Training BPE-Models
+For the BPE-Models to work we first need to learn the joint bpe and its vocab. If this is done then we are able to appy these new vocabs to build new training, test and dev files.  
+Finally we have to build a single vocab file. If all these steps were executed correctly, then you are ready to train.  
+
+mkdir bpe_vocab
+
+Train different bpe models  
+2000:
+
+    subword-nmt learn-joint-bpe-and-vocab -i data/sample.tokenized.train.de-nl.de data/sample.tokenized.train.de-nl.nl --write-vocabulary data/bpe_vocab/vocab.2000.de data/bpe_vocab/vocab.2000.nl -s 2000 --total-symbols -o data/bpe_vocab/de-nl.2000.bpe
+    subword-nmt apply-bpe -c data/bpe_vocab/de-nl.2000.bpe --vocabulary data/bpe_vocab/vocab.2000.de --vocabulary-threshold 10 <data/sample.tokenized.train.de-nl.de> data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.de
+    subword-nmt apply-bpe -c data/bpe_vocab/de-nl.2000.bpe --vocabulary data/bpe_vocab/vocab.2000.nl --vocabulary-threshold 10 <data/sample.tokenized.train.de-nl.nl> data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.nl
+    subword-nmt apply-bpe -c data/bpe_vocab/de-nl.2000.bpe --vocabulary data/bpe_vocab/vocab.2000.de --vocabulary-threshold 10 <data/tokenized.test.de-nl.de> data/bpe_vocab/tokenized.bpe.2000-test.de-nl.de
+    subword-nmt apply-bpe -c data/bpe_vocab/de-nl.2000.bpe --vocabulary data/bpe_vocab/vocab.2000.nl --vocabulary-threshold 10 <data/tokenized.test.de-nl.nl> data/bpe_vocab/tokenized.bpe.2000-test.de-nl.nl
+    subword-nmt apply-bpe -c data/bpe_vocab/de-nl.2000.bpe --vocabulary data/bpe_vocab/vocab.2000.nl --vocabulary-threshold 10 <data/tokenized.dev.de-nl.nl> data/bpe_vocab/tokenized.bpe.2000-dev.de-nl.nl
+    subword-nmt apply-bpe -c data/bpe_vocab/de-nl.2000.bpe --vocabulary data/bpe_vocab/vocab.2000.de --vocabulary-threshold 10 <data/tokenized.dev.de-nl.de> data/bpe_vocab/tokenized.bpe.2000-dev.de-nl.de
+    python3 tools/joeynmt/scripts/build_vocab.py data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.de data/bpe_vocab/sample.tokenized.bpe.2000-train.de-nl.nl --output_path data/bpe_vocab/vocab.2000.de.nl
+    CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 python3 -m joeynmt train configs/bpe.2000.yaml
+
+
+After training detokenization for calculation bleu 
+
+    cat models/bpe.2000/00004000.hyps.test | tools/moses-scripts/scripts/tokenizer/detokenizer.perl > data/bpe_vocab/detokenized.2000.hyps.test
+    cat data/bpe_vocab/detokenized.2000.hyps.test | sacrebleu data/test.de-nl.nl
+    
+This process can now be executed for different vocabulary sizes and lead to the following results:  
+
+
+|    | use bpe | vocabulary size | BLEU |
+|----|---------|-----------------|------|
+| a) | no      | 2000            | 8.6  |
+| b) | yes     | 2000            | 14.3 |
+| c) | yes     | 3000            | 12.7 |
+| d) | yes     | 1000            | 13.3 |
+
+## Manual observations
+
+###Word level:
+
+    "Een paar jaar geleden , <unk> <unk> <unk> een <unk> ."
+There are a lot of words with the label unknown in the hypothesis of the text. Otherwise the model did a very good job of translating as seen in this example:  
+    
+    "Dat kan een groot verschil maken ."
+    
+###BPE.2000:
+
+Since this is the model with the highest Bleu Score its translations are quite solid. Here and there there are minor errors with sentence structure but otherwise it creates well readable sentences.
+    
+    Ze gaan terug gaan om ze te gaan . #three same verbs in the sentence
+    We zijn in de zwellels verbazingwekkend , verbazingwekkend . #again repetition of words
+    Heb een enkel in het publiek van iemand als je iemand in de publiek #again repetition of words but the gender is different :)
+    
+###BPE.3000:
+
+This is the BPE Model with the lowest Bleu Score but still the translations are ok. Just like in BPE.2000 there are some errors but there are many sentences that are well readable.
+    
+    En prototypes bouwen , het prototypes .
+    Ze gaan niet teruggaan . #same as sentence no.1 in BPE 2000 --> verbforms are not grammatically correct
+    
+###BPE.1000
+
+The quality of this model is similar as the two models just described. There are errors but most of the translations are understandalbe and grammatically correct.
+
+    Niet terug te gaan . #Same sentence as in the other models, but for me the most accurate representation. 
+    Is het niet interessant dat hhe wetschappij een sterke effect hebben ?  #hhe is not an existing word
+    
+#Exercise 3
+
+
+    
+
+
